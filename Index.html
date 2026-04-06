@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="manifest" href="manifest.json">
+    <title>Campus Alert</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .container {
+            padding: 15px;
+        }
+
+        .input-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #4facfe;
+            color: white;
+            font-size: 16px;
+        }
+
+        .category-section {
+            margin-bottom: 20px;
+        }
+
+        .category-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .alert {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .time {
+            font-size: 12px;
+            color: gray;
+        }
+
+        .delete {
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>📢 Campus Alert</header>
+
+<div class="container">
+
+    <div class="input-box">
+        <input type="text" id="alertInput" placeholder="What's happening on campus?">
+        
+        <select id="category">
+            <option>Class</option>
+            <option>Exam</option>
+            <option>Event</option>
+            <option>Emergency</option>
+        </select>
+
+        <button onclick="postAlert()">Post Alert</button>
+    </div>
+
+    <div id="alerts"></div>
+
+</div>
+
+<script>
+window.onload = loadAlerts;
+
+function postAlert() {
+    let text = document.getElementById("alertInput").value;
+    let category = document.getElementById("category").value;
+
+    if (text === "") {
+        alert("Write something first!");
+        return;
+    }
+
+    let alertObj = {
+        text: text,
+        category: category,
+        time: new Date().toLocaleTimeString()
+    };
+
+    let saved = JSON.parse(localStorage.getItem("alerts")) || [];
+    saved.push(alertObj);
+    localStorage.setItem("alerts", JSON.stringify(saved));
+
+    loadAlerts();
+
+    document.getElementById("alertInput").value = "";
+}
+
+function loadAlerts() {
+    let container = document.getElementById("alerts");
+    container.innerHTML = "";
+
+    let saved = JSON.parse(localStorage.getItem("alerts")) || [];
+
+    let categories = ["Class", "Exam", "Event", "Emergency"];
+
+    categories.forEach(cat => {
+        let filtered = saved.filter(a => a.category === cat);
+
+        if (filtered.length > 0) {
+            let section = document.createElement("div");
+            section.className = "category-section";
+
+            section.innerHTML = `<div class="category-title">${cat}</div>`;
+
+            filtered.forEach(alertObj => {
+                let div = document.createElement("div");
+                div.className = "alert";
+
+                div.innerHTML = `
+                    <strong>${alertObj.text}</strong>
+                    <div class="time">${alertObj.time}</div>
+                    <button class="delete">Delete</button>
+                `;
+
+                div.querySelector(".delete").onclick = function() {
+                    removeFromStorage(alertObj);
+                    loadAlerts();
+                };
+
+                section.appendChild(div);
+            });
+
+            container.appendChild(section);
+        }
+    });
+}
+
+function removeFromStorage(alertObj) {
+    let saved = JSON.parse(localStorage.getItem("alerts")) || [];
+    saved = saved.filter(a => a.text !== alertObj.text || a.time !== alertObj.time);
+    localStorage.setItem("alerts", JSON.stringify(saved));
+}
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDw7Q997kOOpq-FK4-XDdSVt0ZI4oY-6qg",
+  authDomain: "mau-alert-ca318.firebaseapp.com",
+  projectId: "mau-alert-ca318"
+};
+
+const app = initializeApp(firebaseConfig);
+
+console.log("Firebase connected");
+</script>
+</body>
+</html>

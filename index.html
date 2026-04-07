@@ -116,13 +116,27 @@ function postAlert() {
         alert("Write something first!");
         return;
     }
+// 1. SHOW ALERT IMMEDIATELY (NO DELAY)
+let container = document.getElementById("alerts");
 
-    db.collection("alerts").add({
-        text: text,
-        category: category,
-        time: new Date().toLocaleTimeString()
-    }).then(() => {
-        loadAlerts();
+let div = document.createElement("div");
+div.className = "alert";
+div.innerHTML = `
+    <strong>${text}</strong><br>
+    <small>${new Date().toLocaleTimeString()}</small>
+`;
+
+container.prepend(div);
+
+// 2. SAVE TO FIREBASE IN BACKGROUND
+db.collection("alerts").add({
+    text: text,
+    category: category,
+    time: new Date().toLocaleTimeString()
+});
+
+// 3. CLEAR INPUT
+document.getElementById("alertInput").value = "";
         document.getElementById("alertInput").value = "";
     });
 }

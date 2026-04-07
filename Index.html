@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="manifest" href="manifest.json">
     <title>Campus Alert</title>
     <style>
         body {
@@ -31,7 +30,7 @@
             margin-bottom: 15px;
         }
 
-        input, select {
+        input {
             width: 100%;
             padding: 10px;
             border-radius: 8px;
@@ -49,21 +48,19 @@
             font-size: 16px;
         }
 
-        .category-section {
-            margin-bottom: 20px;
-        }
-
-        .category-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
         .alert {
             background: white;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .alert strong {
+            display: block;
             margin-bottom: 8px;
+            color: black;
+            font-size: 16px;
         }
 
         .time {
@@ -75,9 +72,9 @@
             background: red;
             color: white;
             border: none;
-            padding: 5px 8px;
+            padding: 6px 10px;
             border-radius: 5px;
-            margin-top: 5px;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -90,14 +87,6 @@
 
     <div class="input-box">
         <input type="text" id="alertInput" placeholder="What's happening on campus?">
-        
-        <select id="category">
-            <option>Class</option>
-            <option>Exam</option>
-            <option>Event</option>
-            <option>Emergency</option>
-        </select>
-
         <button onclick="postAlert()">Post Alert</button>
     </div>
 
@@ -106,11 +95,13 @@
 </div>
 
 <script>
-window.onload = loadAlerts;
+window.onload = function() {
+    let saved = JSON.parse(localStorage.getItem("alerts")) || [];
+    saved.forEach(showAlert);
+};
 
 function postAlert() {
     let text = document.getElementById("alertInput").value;
-    let category = document.getElementById("category").value;
 
     if (text === "") {
         alert("Write something first!");
@@ -119,7 +110,6 @@ function postAlert() {
 
     let alertObj = {
         text: text,
-        category: category,
         time: new Date().toLocaleTimeString()
     };
 
@@ -127,49 +117,28 @@ function postAlert() {
     saved.push(alertObj);
     localStorage.setItem("alerts", JSON.stringify(saved));
 
-    loadAlerts();
+    showAlert(alertObj);
 
     document.getElementById("alertInput").value = "";
 }
 
-function loadAlerts() {
-    let container = document.getElementById("alerts");
-    container.innerHTML = "";
+function showAlert(alertObj) {
+    let newAlert = document.createElement("div");
+    newAlert.className = "alert";
 
-    let saved = JSON.parse(localStorage.getItem("alerts")) || [];
+    newAlert.innerHTML = `
+        <strong>${alertObj.text}</strong>
+        <span class="time">${alertObj.time}</span>
+        <br>
+        <button class="delete">Delete</button>
+    `;
 
-    let categories = ["Class", "Exam", "Event", "Emergency"];
+    newAlert.querySelector(".delete").onclick = function() {
+        newAlert.remove();
+        removeFromStorage(alertObj);
+    };
 
-    categories.forEach(cat => {
-        let filtered = saved.filter(a => a.category === cat);
-
-        if (filtered.length > 0) {
-            let section = document.createElement("div");
-            section.className = "category-section";
-
-            section.innerHTML = `<div class="category-title">${cat}</div>`;
-
-            filtered.forEach(alertObj => {
-                let div = document.createElement("div");
-                div.className = "alert";
-
-                div.innerHTML = `
-                    <strong>${alertObj.text}</strong>
-                    <div class="time">${alertObj.time}</div>
-                    <button class="delete">Delete</button>
-                `;
-
-                div.querySelector(".delete").onclick = function() {
-                    removeFromStorage(alertObj);
-                    loadAlerts();
-                };
-
-                section.appendChild(div);
-            });
-
-            container.appendChild(section);
-        }
-    });
+    document.getElementById("alerts").appendChild(newAlert);
 }
 
 function removeFromStorage(alertObj) {
@@ -178,74 +147,6 @@ function removeFromStorage(alertObj) {
     localStorage.setItem("alerts", JSON.stringify(saved));
 }
 </script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDw7Q997kOOpq-FK4-XDdSVt0ZI4oY-6qg",
-  authDomain: "mau-alert-ca318.firebaseapp.com",
-  projectId: "mau-alert-ca318"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-function postAlert() {
-    let text = document.getElementById("alertInput").value;
-    let category = document.getElementById("category").value;
-
-    if (text === "") {
-        alert("Write something first!");
-        return;
-    }
-
-    db.collection("alerts").add({
-        text: text,
-        category: category,
-        time: new Date().toLocaleTimeString()
-    }).then(() => {
-        loadAlerts();
-        document.getElementById("alertInput").value = "";
-    });
-}
-
-function loadAlerts() {
-    let container = document.getElementById("alerts");
-    container.innerHTML = "";
-
-    db.collection("alerts").get().then(snapshot => {
-        let data = [];
-
-        snapshot.forEach(doc => {
-            data.push(doc.data());
-        });
-
-        let categories = ["Class", "Exam", "Event", "Emergency"];
-
-        categories.forEach(cat => {
-            let filtered = data.filter(a => a.category === cat);
-
-            if (filtered.length > 0) {
-                let section = document.createElement("div");
-                section.innerHTML = `<h3>${cat}</h3>`;
-
-                filtered.forEach(alert => {
-                    let div = document.createElement("div");
-                    div.innerHTML = `
-                        <strong>${alert.text}</strong><br>
-                        <small>${alert.time}</small>
-                    `;
-                    section.appendChild(div);
-                });
-
-                container.appendChild(section);
-            }
-        });
-    });
-}
-
-window.onload = loadAlerts;
-</script>
 </body>
 </html>
